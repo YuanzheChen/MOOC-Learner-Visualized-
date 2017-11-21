@@ -1,0 +1,302 @@
+{% extends "layout.html" %}
+{% block jumbotron %}
+<h2>Rendering: {{ plot_type }}</h2>
+<p>
+</p>
+{% endblock %}
+
+
+{% block content %}
+<script type=text/javascript>
+$(function() {
+  $.getJSON($SCRIPT_ROOT + '/render/_get_frames', function(data) {
+    $('#select_frame').find('option').remove().end();
+    for( i in data.result )
+    {
+      $('#select_frame').append('<option value="'+data.result[i]._id+'">'+data.result[i].features.join(", ")+'</option>');
+    }
+    $('#select_frame').selectpicker('render');
+    $('#select_frame').selectpicker('refresh');
+  });
+  $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_get_data_setting', function(data) {
+    for ( i in data.result ) {
+        $("label[for='select_data_setting_"+data.result[i].name+"']").text(data.result[i].desc);
+        $('#select_data_setting_'+data.result[i].name).find('option').remove().end();
+        $('#select_data_setting_'+data.result[i].name).selectpicker('render');
+        $('#select_data_setting_'+data.result[i].name).selectpicker('refresh');
+    }
+  });
+  $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_get_config', function(data) {
+    for ( i in data.result ) {
+      if (data.result[i].type=='select') {
+        $("label[for='select_config_"+data.result[i].name+"']").text(data.result[i].desc);
+        $('#select_config_'+data.result[i].name).find('option').remove().end();
+        for( j in data.result[i].item )
+        {
+          $('#select_config_'+data.result[i].name).append('<option>'+data.result[i].item[j]+'</option>');
+        }
+        $('#select_config_'+data.result[i].name).selectpicker('val', data.result[i].default);
+        $('#select_config_'+data.result[i].name).selectpicker('render');
+        $('#select_config_'+data.result[i].name).selectpicker('refresh');
+      }
+      if (data.result[i].type=='input') {
+        $("label[for='input_config_"+data.result[i].name+"']").text(data.result[i].desc);
+        $('#input_config_'+data.result[i].name).val(data.result[i].default);
+      }
+      if (data.result[i].type=='checkbox') {
+        $("label[for='checkbox_config_"+data.result[i].name+"']").text(data.result[i].desc);
+        $('#checkbox_config_'+data.result[i].name).prop('checked', data.result[i].default);
+      }
+    }
+  });
+  $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_get_interaction_config', function(data) {
+    for ( i in data.result ) {
+      if (data.result[i].type=='select') {
+        $("label[for='select_interaction_config_"+data.result[i].name+"']").text(data.result[i].desc);
+        $('#select_interaction_config_'+data.result[i].name).find('option').remove().end();
+        for( j in data.result[i].item )
+        {
+          $('#select_interaction_config_'+data.result[i].name).append('<option>'+data.result[i].item[j]+'</option>');
+        }
+        $('#select_interaction_config_'+data.result[i].name).selectpicker('val', data.result[i].default);
+        $('#select_interaction_config_'+data.result[i].name).selectpicker('render');
+        $('#select_interaction_config_'+data.result[i].name).selectpicker('refresh');
+      }
+      if (data.result[i].type=='input') {
+        $("label[for='input_interaction_config_"+data.result[i].name+"']").text(data.result[i].desc);
+        $('#input_interaction_config_'+data.result[i].name).val(data.result[i].default);
+      }
+      if (data.result[i].type=='checkbox') {
+        $("label[for='checkbox_interaction_config_"+data.result[i].name+"']").text(data.result[i].desc);
+        $('#checkbox_interaction_config_'+data.result[i].name).prop('checked', data.result[i].default);
+      }
+    }
+  });
+});
+</script>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Select Frame</div>
+    <div class="panel-body">
+        <div class="forum-group">
+            <label for="select_frame">Frame to render</label>
+            <select id="select_frame" class="selectpicker" data-live-search="true"  multiple data-max-options="1" data-width="100%">
+            </select>
+        </div>
+    </div>
+</div>
+
+<script type=text/javascript>
+$(function() {
+$('#select_frame').on('change', function() {
+  var selected_frame_id = $('#select_frame').val();
+  if (selected_frame_id != null){
+    selected_frame_id = selected_frame_id[0]
+  }
+  $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_set_selected_frame', {
+    'selected_frame_id': selected_frame_id
+  }, function(data) {
+  });
+  var data_list;
+  var data_setting;
+  var ready_data_list = $.getJSON($SCRIPT_ROOT + '/render/_get_data_list', {
+    'selected_frame_id': selected_frame_id
+  }, function(data) {
+    data_list = data
+  });
+  var ready_data_setting = $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_get_data_setting', function(data) {
+    data_setting = data
+  });
+  $.when(ready_data_list, ready_data_setting).then(function() {
+    for ( i in data_setting.result) {
+      $('#select_data_setting_'+data_setting.result[i].name).find('option').remove().end();
+      for( j in data_list.result )
+      {
+        $('#select_data_setting_'+data_setting.result[i].name).append('<option value="'+data_list.result[j]._id+'">'+data_list.result[j].name+'</option>');
+      }
+      $('#select_data_setting_'+data_setting.result[i].name).selectpicker('val', data_setting.result[i].default);
+      $('#select_data_setting_'+data_setting.result[i].name).selectpicker('render');
+      $('#select_data_setting_'+data_setting.result[i].name).selectpicker('refresh');
+    }
+  });
+  return true;
+});
+});
+</script>
+
+<script type=text/javascript>
+  $(function() {
+    $('#render').bind('click', function() {
+      var data_setting_input = {};
+      $('#data_setting').find(':input').filter('select').each(function(){
+        data_setting_input[this.id+'_text'] = $('#'+this.id+' option:selected').text();
+        var select_value = $(this).val();
+        if (select_value == null) {
+          select_value = 0
+        }
+        data_setting_input[this.id+'_value'] = select_value;
+      });
+      $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_set_data_setting', data_setting_input, function() {
+      });
+      var config_input = {};
+      $('#config').find(':input').filter('[id^=select]').each(function(){
+        config_input[this.id+'_value'] = $(this).val();
+      });
+      $('#config').find(':input').filter('[id^=input]').each(function(){
+        config_input[this.id+'_value'] = $(this).val();
+      });
+      $('#config').find(':input').filter('[id^=checkbox]').each(function(){
+        config_input[this.id+'_value'] = $(this).is(':checked');
+      });
+      $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_set_config', config_input , function() {
+      });
+      var interaction_config_input = {};
+      $('#interaction_config').find(':input').filter('[id^=select]').each(function(){
+        interaction_config_input[this.id+'_value'] = $(this).val();
+      });
+      $('#interaction_config').find(':input').filter('[id^=input]').each(function(){
+        interaction_config_input[this.id+'_value'] = $(this).val();
+      });
+      $('#interaction_config').find(':input').filter('[id^=checkbox]').each(function(){
+        interaction_config_input[this.id+'_value'] = $(this).is(':checked');
+      });
+      $.getJSON($SCRIPT_ROOT + '/render/interactive/{{ plot_type }}/_set_interaction_config', interaction_config_input , function() {
+      });
+      $('#plot_iframe')[0].src = $('#plot_iframe')[0].src;
+      $('#plot_modal').modal('show');
+      return false;
+    });
+  });
+</script>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Data Setting</div>
+    <div class="panel-body">
+        <form id="data_setting">
+            {% for element in data_setting %}
+            {{ loop.cycle('<div class="row row-eq-height">', '') | safe }}
+                <div class="col-md-6">
+                    <div class="forum-group">
+                        <label for="select_data_setting_{{ element['name'] }}"></label>
+                        <select id="select_data_setting_{{ element['name'] }}" class="selectpicker" data-width="100%">
+                        </select>
+                    </div>
+                </div>
+            {{ loop.cycle('', '</div><p></p>') | safe }}
+            {% endfor %}
+            {% if data_setting | length % 2 == 1 %}</div>{% endif %}
+        </form>
+    </div>
+</div>
+
+
+<div class="panel panel-default">
+    <div class="panel-heading">Config</div>
+    <div class="panel-body">
+        <form id="config">
+            {% for element in config %}
+            {{ loop.cycle('<div class="row row-eq-height">', '') | safe }}
+            {% if element['type'] == 'select' %}
+                <div class="col-md-6">
+                    <div class="forum-group">
+                        <label for="select_config_{{ element['name'] }}"></label>
+                        <select id="select_config_{{ element['name'] }}" class="selectpicker" data-live-search="true" data-size="5" data-width="100%">
+                        </select>
+                    </div>
+                </div>
+            {% elif element['type'] == 'input' %}
+                <div class="col-md-6">
+                    <div class="forum-group">
+                        <label for="input_config_{{ element['name'] }}"></label>
+                        <input id="input_config_{{ element['name'] }}" type="text" class="form-control" aria-describedby="basic-addon3">
+                    </div>
+                </div>
+            {% elif element['type'] == 'checkbox' %}
+                <div class="col-md-6">
+                    <div class="form-check">
+                      <label for="checkbox_config_{{ element['name'] }}"></label>
+                        <p><input id="checkbox_config_{{ element['name'] }}" class="form-check-input" type="checkbox" value=""></p>
+                    </div>
+                </div>
+            {% endif %}
+            {{ loop.cycle('', '</div><p></p>') | safe }}
+            {% endfor %}
+            {% if config | length % 2 == 1 %}</div>{% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Interaction Config</div>
+    <div class="panel-body">
+        <form id="interaction_config">
+            {% for element in interaction_config %}
+            {{ loop.cycle('<div class="row row-eq-height">', '') | safe }}
+            {% if element['type'] == 'select' %}
+                <div class="col-md-6">
+                    <div class="forum-group">
+                        <label for="select_interaction_config_{{ element['name'] }}"></label>
+                        <select id="select_interaction_config_{{ element['name'] }}" class="selectpicker" data-live-search="true" data-size="5" data-width="100%">
+                        </select>
+                    </div>
+                </div>
+            {% elif element['type'] == 'input' %}
+                <div class="col-md-6">
+                    <div class="forum-group">
+                        <label for="input_interaction_config_{{ element['name'] }}"></label>
+                        <input id="input_interaction_config_{{ element['name'] }}" type="text" class="form-control" aria-describedby="basic-addon3">
+                    </div>
+                </div>
+            {% elif element['type'] == 'checkbox' %}
+                <div class="col-md-6">
+                    <div class="form-check">
+                      <label for="checkbox_interaction_config_{{ element['name'] }}"></label>
+                        <p><input id="checkbox_interaction_config_{{ element['name'] }}" class="form-check-input" type="checkbox" value=""></p>
+                    </div>
+                </div>
+            {% endif %}
+            {{ loop.cycle('', '</div><p></p>') | safe }}
+            {% endfor %}
+            {% if interaction_config | length % 2 == 1 %}</div>{% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Render</div>
+    <div class="panel-body">
+        <button id="render" class="btn btn-primary btn-lg btn-block" type="button">Render</button>
+    </div>
+</div>
+
+<script>
+function resize_iframe(obj) {
+obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+obj.style.width = obj.contentWindow.document.body.scrollWidth + 'px';
+}
+</script>
+
+<style>
+.modal-lg {
+  width: 800px;
+}
+</style>
+
+<!-- Modal -->
+<div class="modal fade bd-example-modal-lg" id="plot_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Plot</h4>
+      </div>
+      <div class="modal-body">
+          <iframe id="plot_iframe" src="/render/interactive/{{ plot_type }}/_plot" frameborder="0" scrolling="no" onload="resize_iframe(this)"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

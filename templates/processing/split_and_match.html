@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block jumbotron %}
+<h2>Processing Pipe</h2>
+<p>
+</p>
+{% endblock %}
+
+{% block content %}
+<div id="match_success_alert" class="alert alert-success collapse">
+    <button type="button" class="close" data-dismiss="alert">x</button>
+    <strong>Success</strong> The selected isolated frames have been successfully matched
+</div>
+
+<script type=text/javascript>
+$(function() {
+  $.getJSON($SCRIPT_ROOT + '/process/_get_isolated_frames', function(data) {
+    $('#select_isolated_frames').find('option').remove().end();
+    for( i in data.result )
+    {
+      $('#select_isolated_frames').append('<option value="'+data.result[i]._id+'">'+data.result[i].features.join(", ")+'</option>');
+      $('#select_isolated_frames').selectpicker('refresh');
+    }
+  });
+});
+</script>
+
+<script type=text/javascript>
+  $(function() {
+    $('#request_match_frames').bind('click', function() {
+      $.getJSON($SCRIPT_ROOT + '/process/_request_match_frames', {
+        select_isolated_frame_ids: $('#select_isolated_frames').val().join(",")
+      }, function(data) {
+        $("#match_success_alert").fadeTo(2000, 500).slideUp(500, function() {
+          $("#match_success_alert").slideUp(500);
+        });
+      });
+      return false;
+    });
+  });
+</script>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Match</div>
+    <div class="panel-body">
+        <div class="forum-group">
+            <label for="select_isolated_frames">Isolated Feature Frames</label>
+            <select id="select_isolated_frames" class="selectpicker" data-live-search="true" multiple data-max-options="5" data-actions-box="true" data-width="100%">
+            </select>
+        </div>
+        <p></p>
+        <button id="request_match_frames" class="btn btn-primary btn-block" type="button">Match</button>
+    </div>
+</div>
+{% endblock %}

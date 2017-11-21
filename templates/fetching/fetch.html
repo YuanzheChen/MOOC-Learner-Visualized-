@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+{% block jumbotron %}
+<h2>Fetching Pipe</h2>
+<p>
+</p>
+{% endblock %}
+
+{% block content %}
+<div id="fetch_success_alert" class="alert alert-success collapse">
+    <button type="button" class="close" data-dismiss="alert">x</button>
+    <strong>Success</strong> The selected feature has been successfully fetched
+</div>
+
+<script type=text/javascript>
+$(function() {
+  $.getJSON($SCRIPT_ROOT + '/fetch/_get_feature_tables', function(data) {
+    $('#select_feature_tables').find('option').remove().end();
+    for( i in data.result )
+    {
+      $('#select_feature_tables').append('<option value="'+data.result[i]._id+'">'+data.result[i].feature_table+'</option>');
+      $('#select_feature_tables').selectpicker('refresh');
+    }
+  });
+  $.getJSON($SCRIPT_ROOT + '/fetch/_get_features', {
+    selected_feature_table_id: 0
+  }, function(data) {
+    $('#select_features').find('option').remove().end();
+    for( i in data.result )
+    {
+      $('#select_features').append('<option value="'+data.result[i]._id+'">['+zeroFill(data.result[i].feature_id,3)+'] '+data.result[i].feature_name+'</option>');
+      $('#select_features').selectpicker('refresh');
+    }
+  });
+});
+</script>
+
+<script type=text/javascript>
+function zeroFill( number, width )
+{
+  width -= number.toString().length;
+  if ( width > 0 )
+  {
+    return new Array( width + (/\./.test( number ) ? 2 : 1) ).join( '0' ) + number;
+  }
+  return number + ""; // always return a string
+}
+</script>
+
+<script type=text/javascript>
+$(function() {
+$('#select_feature_tables').on('change', function() {
+  $.getJSON($SCRIPT_ROOT + '/fetch/_get_features', {
+    selected_feature_table_id: $('#select_feature_tables').val()
+  }, function(data) {
+    $('#select_features').find('option').remove().end();
+    for( i in data.result )
+    {
+      $('#select_features').append('<option value="'+data.result[i]._id+'">['+zeroFill(data.result[i].feature_id,3)+'] '+data.result[i].feature_name+'</option>');
+      $('#select_features').selectpicker('refresh');
+    }
+  });
+  return true;
+});
+});
+</script>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Select Feature Table</div>
+    <div class="panel-body">
+        <div class="forum-group">
+            <label for="select_feature_tables">Feature Table</label>
+            <select id="select_feature_tables" class="selectpicker" data-width="100%">
+            </select>
+        </div>
+        <p></p>
+        <div class="forum-group">
+            <label for="select_features">Features</label>
+            <select id="select_features" class="selectpicker" data-live-search="true" data-actions-box="true" multiple data-width="100%">
+            </select>
+        </div>
+    </div>
+</div>
+
+<script type=text/javascript>
+  $(function() {
+    $('#fetch_data').bind('click', function() {
+      $('#test_input').attr("placeholder", '"'+$('#select_features').val()+'"').val("").focus().blur();
+      $.getJSON($SCRIPT_ROOT + '/fetch/_set_selected_features', {
+        selected_feature_id_ids: $('#select_features').val().join(",")
+      }, function(data) {
+        $("#fetch_success_alert").fadeTo(2000, 500).slideUp(500, function() {
+          $("#fetch_success_alert").slideUp(500);
+        });
+      });
+      return false;
+    });
+  });
+</script>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Fetch Data</div>
+    <div class="panel-body">
+        <button id="fetch_data" class="btn btn-primary btn-block" type="button">Fetch Data</button>
+    </div>
+</div>
+{% endblock %}
